@@ -1,6 +1,7 @@
 import WebSocket from 'ws';
 import axios, {AxiosResponse} from 'axios';
 import {ClientUser} from "./ClientUser";
+import {IntentsManager} from "../managers/IntentsManager";
 
 interface GatewayResponse {
     url: string;
@@ -9,7 +10,12 @@ interface GatewayResponse {
 export class Bot {
     private socket: WebSocket | null = null;
     private heartbeatInterval: NodeJS.Timeout | null = null;
+    private intentsManager: IntentsManager;
     public user: ClientUser | null = null;
+
+    constructor(intentsManager: IntentsManager) {
+        this.intentsManager = intentsManager;
+    }
 
     public async login(token: string): Promise<void> {
         this.user = new ClientUser(token);
@@ -24,13 +30,18 @@ export class Bot {
     }
 
     private async getGatewayUrl(token: string): Promise<GatewayResponse> {
-        const response: AxiosResponse<any, any> = await axios.get('https://discord.com/api/v10/gateway/bot', {
-            headers: {
-                "Authorization": `Bot ${token}`
-            }
-        });
+        try {
+            const response: AxiosResponse<any, any> = await axios.get('https://discord.com/api/v10/gateway/bot', {
+                headers: {
+                    "Authorization": `Bot ${token}`
+                }
+            });
 
-        return response.data as GatewayResponse;
+            return response.data as GatewayResponse;
+        } catch (error) {
+            console.error('Failed to get gateway URL:', error);
+            throw error;
+        }
     }
 
     private connectToGateway(url: string, token: string): void {
@@ -78,6 +89,7 @@ export class Bot {
             op: 2,
             d: {
                 token: token,
+                intents: this.intentsManager.getIntents(),
                 properties: {
                     $os: 'linux',
                     $browser: 'my_library',

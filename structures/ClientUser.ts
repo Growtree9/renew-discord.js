@@ -21,6 +21,7 @@ export class ClientUser {
 
     constructor(private token: string) {
         this.fetchUserData();
+        this.startUserDataUpdateInterval();
     }
 
     private async fetchUserData() {
@@ -54,5 +55,11 @@ export class ClientUser {
         } catch (error) {
             console.error('Failed to fetch user data:', error);
         }
+    }
+
+    private startUserDataUpdateInterval() {
+        setInterval(() => {
+            this.fetchUserData();
+        }, 600000);
     }
 }
